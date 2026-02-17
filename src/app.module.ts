@@ -4,9 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { UserModule } from '@/modules/user/user.module';
+import { AuthModule } from '@/core/auth/auth.module';
+import { JwtAuthGuard } from '@/core/auth/jwt-auth.guard';
 import databaseConfig from './config/database.config';
 import globalConfig from './config/global.config';
 

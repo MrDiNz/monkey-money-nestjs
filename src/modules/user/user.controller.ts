@@ -19,7 +19,7 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { Public } from '../auth/public.decorator';
+import { Public } from '@/core/auth/public.decorator';
 
 @ApiTags('user')
 @Controller('user')
