@@ -33,6 +33,31 @@ The project uses `pnpm` as the package manager.
   pnpm run start:prod
   ```
 
+## Database and Migrations
+
+The project uses TypeORM with PostgreSQL.
+
+- **Configuration:**
+  - Database configuration is managed via `@nestjs/config` and stored in `src/config/database.config.ts`.
+  - TypeORM CLI configuration is in `src/config/typeorm.config.ts` and uses `dotenv` to load environment variables.
+  - The application uses `TypeOrmModule.forRootAsync` in `app.module.ts` to load the configuration.
+
+- **Generate a migration:**
+  ```bash
+  pnpm run migration:generate <MigrationName>
+  ```
+  Example: `pnpm run migration:generate CreateUserTable`
+
+- **Run migrations:**
+  ```bash
+  pnpm run migration:run
+  ```
+
+- **Revert the last migration:**
+  ```bash
+  pnpm run migration:revert
+  ```
+
 ## Testing
 
 The project uses [Jest](https://jestjs.io/) for testing.
