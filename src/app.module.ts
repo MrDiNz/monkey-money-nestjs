@@ -5,12 +5,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import databaseConfig from './config/database.config';
+import globalConfig from './config/global.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig],
+      load: [databaseConfig, globalConfig],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
