@@ -6,9 +6,7 @@ import {
   Patch,
   Param,
   Delete,
-  UseGuards,
   Request,
-  Logger,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,12 +19,14 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('user')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Public()
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
   @ApiResponse({
@@ -38,6 +38,7 @@ export class UserController {
     return this.userService.create(createUserDto);
   }
 
+  @Public()
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'User logged in successfully.' })
@@ -46,6 +47,7 @@ export class UserController {
     return this.userService.login(loginUserDto);
   }
 
+  @ApiBearerAuth()
   @Post('logout')
   @ApiOperation({ summary: 'Logout user' })
   @ApiResponse({ status: 200, description: 'User logged out successfully.' })
@@ -55,7 +57,6 @@ export class UserController {
     return { message: 'Logged out successfully' };
   }
 
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get('profile')
   @ApiOperation({ summary: 'Get user profile' })
@@ -65,7 +66,6 @@ export class UserController {
     return req.user;
   }
 
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get()
   @ApiOperation({ summary: 'Get all users' })
@@ -75,7 +75,6 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by id' })
@@ -87,7 +86,6 @@ export class UserController {
     return this.userService.findOne(+id);
   }
 
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
@@ -102,7 +100,6 @@ export class UserController {
     return this.userService.update(+id, updateUserDto);
   }
 
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user' })
