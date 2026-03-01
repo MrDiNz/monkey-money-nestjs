@@ -1,46 +1,29 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { UserController } from './user.controller';
-import { UserService } from './user.service';
-import { User } from './entities/user.entity';
+import { Test, TestingModule } from '@nestjs/testing'
+import { UserController } from './user.controller'
+import { UserService } from './user.service'
+
+const mockUserService = {
+  create: jest.fn(),
+  login: jest.fn(),
+  findAll: jest.fn(),
+  findOne: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+}
 
 describe('UserController', () => {
-  let controller: UserController;
+  let controller: UserController
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UserController],
-      providers: [
-        UserService,
-        {
-          provide: getRepositoryToken(User),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-            find: jest.fn(),
-            findOne: jest.fn(),
-            findOneBy: jest.fn(),
-            update: jest.fn(),
-            delete: jest.fn(),
-            createQueryBuilder: jest.fn(() => ({
-              where: jest.fn().mockReturnThis(),
-              addSelect: jest.fn().mockReturnThis(),
-              getOne: jest.fn(),
-            })),
-          },
-        },
-        {
-          provide: JwtService,
-          useValue: { sign: jest.fn() },
-        },
-      ],
-    }).compile();
+      providers: [{ provide: UserService, useValue: mockUserService }],
+    }).compile()
 
-    controller = module.get<UserController>(UserController);
-  });
+    controller = module.get<UserController>(UserController)
+  })
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-});
+    expect(controller).toBeDefined()
+  })
+})
