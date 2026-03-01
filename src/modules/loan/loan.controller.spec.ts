@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoanController } from './loan.controller';
 import { LoanService } from './loan.service';
-import { CreateLoanDto, BorrowerDto, VehicleDto, GuarantorDto } from './dto/create-loan.dto';
+import {
+  CreateLoanDto,
+  BorrowerDto,
+  VehicleDto,
+  GuarantorDto,
+} from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { Loan } from './entities/loan.entity';
 import { PaginatedLoanDto } from './dto/paginated-loan.dto';
@@ -82,7 +87,11 @@ describe('LoanController', () => {
   // ---------------------------------------------------------------------------
   describe('create', () => {
     it('should call service.create with the dto and return the result', async () => {
-      const dto: CreateLoanDto = { borrower: mockBorrowerDto, vehicle: mockVehicleDto, guarantors: [] };
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+        guarantors: [],
+      };
       service.create.mockResolvedValue(mockLoan);
 
       const result = await controller.create(dto);
@@ -161,7 +170,9 @@ describe('LoanController', () => {
   // ---------------------------------------------------------------------------
   describe('update', () => {
     it('should convert string id to number and call service.update', async () => {
-      const dto: UpdateLoanDto = { borrower: { firstName: 'ใหม่' } as BorrowerDto };
+      const dto: UpdateLoanDto = {
+        borrower: { firstName: 'ใหม่' } as BorrowerDto,
+      };
       service.update.mockResolvedValue(mockLoan);
 
       const result = await controller.update('1', dto);

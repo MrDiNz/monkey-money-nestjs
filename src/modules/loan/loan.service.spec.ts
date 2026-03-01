@@ -4,7 +4,12 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { LoanService } from './loan.service';
 import { Loan } from './entities/loan.entity';
 import { Guarantor } from './entities/guarantor.entity';
-import { CreateLoanDto, BorrowerDto, VehicleDto, GuarantorDto } from './dto/create-loan.dto';
+import {
+  CreateLoanDto,
+  BorrowerDto,
+  VehicleDto,
+  GuarantorDto,
+} from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 
 const mockBorrowerDto: BorrowerDto = {
@@ -42,8 +47,20 @@ const mockGuarantorDto: GuarantorDto = {
 const makeLoan = (overrides: Partial<Loan> = {}): Loan =>
   ({
     id: 1,
-    borrower: { ...mockBorrowerDto, id: 1, loan: null as any, createdAt: new Date(), updatedAt: new Date() },
-    vehicle: { ...mockVehicleDto, id: 1, loan: null as any, createdAt: new Date(), updatedAt: new Date() },
+    borrower: {
+      ...mockBorrowerDto,
+      id: 1,
+      loan: null as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    vehicle: {
+      ...mockVehicleDto,
+      id: 1,
+      loan: null as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
     guarantors: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -87,7 +104,11 @@ describe('LoanService', () => {
   // ---------------------------------------------------------------------------
   describe('create', () => {
     it('should create a loan without guarantors', async () => {
-      const dto: CreateLoanDto = { borrower: mockBorrowerDto, vehicle: mockVehicleDto, guarantors: [] };
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+        guarantors: [],
+      };
       const loan = makeLoan();
 
       loanRepo.create.mockReturnValue(loan);
@@ -96,7 +117,10 @@ describe('LoanService', () => {
 
       const result = await service.create(dto);
 
-      expect(loanRepo.create).toHaveBeenCalledWith({ borrower: mockBorrowerDto, vehicle: mockVehicleDto });
+      expect(loanRepo.create).toHaveBeenCalledWith({
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+      });
       expect(loanRepo.save).toHaveBeenCalledWith(loan);
       expect(guarantorRepo.save).not.toHaveBeenCalled();
       expect(result).toEqual(loan);
@@ -109,8 +133,16 @@ describe('LoanService', () => {
         guarantors: [mockGuarantorDto],
       };
       const savedLoan = makeLoan();
-      const guarantorEntity = { ...mockGuarantorDto, id: 1, loan: savedLoan, createdAt: new Date(), updatedAt: new Date() };
-      const loanWithGuarantor = makeLoan({ guarantors: [guarantorEntity as any] });
+      const guarantorEntity = {
+        ...mockGuarantorDto,
+        id: 1,
+        loan: savedLoan,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const loanWithGuarantor = makeLoan({
+        guarantors: [guarantorEntity as any],
+      });
 
       loanRepo.create.mockReturnValue(savedLoan);
       loanRepo.save.mockResolvedValue(savedLoan);
@@ -120,7 +152,10 @@ describe('LoanService', () => {
 
       const result = await service.create(dto);
 
-      expect(guarantorRepo.create).toHaveBeenCalledWith({ ...mockGuarantorDto, loan: savedLoan });
+      expect(guarantorRepo.create).toHaveBeenCalledWith({
+        ...mockGuarantorDto,
+        loan: savedLoan,
+      });
       expect(guarantorRepo.save).toHaveBeenCalled();
       expect(result.guarantors).toHaveLength(1);
     });
@@ -129,10 +164,15 @@ describe('LoanService', () => {
       const dto: CreateLoanDto = {
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
-        guarantors: [mockGuarantorDto, { ...mockGuarantorDto, firstName: 'คนที่สอง' }],
+        guarantors: [
+          mockGuarantorDto,
+          { ...mockGuarantorDto, firstName: 'คนที่สอง' },
+        ],
       };
       const savedLoan = makeLoan();
-      const loanWith2Guarantors = makeLoan({ guarantors: [{} as any, {} as any] });
+      const loanWith2Guarantors = makeLoan({
+        guarantors: [{} as any, {} as any],
+      });
 
       loanRepo.create.mockReturnValue(savedLoan);
       loanRepo.save.mockResolvedValue(savedLoan);
@@ -211,7 +251,9 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(99)).rejects.toThrow(NotFoundException);
-      await expect(service.findOne(99)).rejects.toThrow('Loan with ID 99 not found');
+      await expect(service.findOne(99)).rejects.toThrow(
+        'Loan with ID 99 not found',
+      );
     });
   });
 
@@ -222,7 +264,9 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(loan);
       loanRepo.save.mockResolvedValue(loan);
 
-      const dto: UpdateLoanDto = { borrower: { firstName: 'ใหม่' } as BorrowerDto };
+      const dto: UpdateLoanDto = {
+        borrower: { firstName: 'ใหม่' } as BorrowerDto,
+      };
       await service.update(1, dto);
 
       expect(loan.borrower.firstName).toBe('ใหม่');
@@ -234,7 +278,9 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(loan);
       loanRepo.save.mockResolvedValue(loan);
 
-      const dto: UpdateLoanDto = { vehicle: { color: 'น้ำเงิน' } as VehicleDto };
+      const dto: UpdateLoanDto = {
+        vehicle: { color: 'น้ำเงิน' } as VehicleDto,
+      };
       await service.update(1, dto);
 
       expect(loan.vehicle.color).toBe('น้ำเงิน');
@@ -289,7 +335,9 @@ describe('LoanService', () => {
       };
 
       await expect(service.update(1, dto)).rejects.toThrow(BadRequestException);
-      await expect(service.update(1, dto)).rejects.toThrow('guarantors must not exceed 2');
+      await expect(service.update(1, dto)).rejects.toThrow(
+        'guarantors must not exceed 2',
+      );
     });
 
     it('should throw NotFoundException when loan does not exist', async () => {
@@ -301,7 +349,9 @@ describe('LoanService', () => {
     it('should return the updated loan via findOne', async () => {
       const loan = makeLoan();
       const updatedLoan = makeLoan({ guarantors: [] });
-      loanRepo.findOne.mockResolvedValueOnce(loan).mockResolvedValueOnce(updatedLoan);
+      loanRepo.findOne
+        .mockResolvedValueOnce(loan)
+        .mockResolvedValueOnce(updatedLoan);
       loanRepo.save.mockResolvedValue(loan);
 
       const result = await service.update(1, {});
@@ -327,7 +377,9 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(null);
 
       await expect(service.remove(99)).rejects.toThrow(NotFoundException);
-      await expect(service.remove(99)).rejects.toThrow('Loan with ID 99 not found');
+      await expect(service.remove(99)).rejects.toThrow(
+        'Loan with ID 99 not found',
+      );
     });
   });
 });

@@ -65,6 +65,42 @@ src/
 
 `synchronize` is enabled automatically when `NODE_ENV !== 'production'`.
 
+## Timezone Convention
+
+**Database stores all timestamps in UTC.** All business logic that involves date/time must use **Asia/Bangkok (UTC+7)** — no DST, fixed offset.
+
+This applies to:
+- Computing year/month for `loanNumber` format (`yy-mm-seq`)
+- Building date range filters for month-boundary queries (e.g., `getNextSequence`)
+- Any future feature that buckets records by calendar month/year
+
+**Pattern — extract Bangkok year/month from a UTC Date:**
+```typescript
+const BANGKOK_TZ = 'Asia/Bangkok'
+
+function toBangkokParts(utcDate: Date): { year: number; month: number } {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: BANGKOK_TZ,
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(utcDate)
+  return {
+    year:  Number(parts.find(p => p.type === 'year')!.value),
+    month: Number(parts.find(p => p.type === 'month')!.value),
+  }
+}
+```
+
+**Pattern — convert Bangkok month boundaries to UTC for TypeORM `Between()`:**
+```typescript
+// Bangkok month (year, month) → UTC range
+const startUTC = new Date(Date.UTC(year, month - 1, 1) - 7 * 3600_000)
+const endUTC   = new Date(Date.UTC(year, month,     1) - 7 * 3600_000 - 1)
+// e.g. Bangkok April 2026 → UTC 2026-03-31T17:00:00.000Z to 2026-04-30T16:59:59.999Z
+```
+
+**Never** call `.getFullYear()`, `.getMonth()`, or `.getDate()` directly on a UTC `Date` for business calendar logic — these return UTC values, not Bangkok values.
+
 ## Development Workflow
 
 TDD approach: write/update tests before implementation, confirm failure, then implement. All code must pass `pnpm run lint` and `pnpm run build` (TypeScript) without errors before committing.
