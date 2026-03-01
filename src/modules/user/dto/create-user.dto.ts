@@ -12,12 +12,19 @@ export class CreateUserDto {
   @IsNotEmpty()
   username: string;
 
-  @ApiProperty({ example: 'password123', description: 'The password of the user' })
+  @ApiProperty({
+    example: 'password123',
+    description: 'The password of the user',
+  })
   @IsString()
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ example: 'Some remark', description: 'Optional remark', required: false })
+  @ApiProperty({
+    example: 'Some remark',
+    description: 'Optional remark',
+    required: false,
+  })
   @IsString()
   @IsOptional()
   remark?: string;
