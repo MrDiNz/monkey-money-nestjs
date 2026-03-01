@@ -12,4 +12,5 @@ export default new DataSource({
   database: process.env.DATABASE_NAME || 'monkey-money',
   entities: ['dist/**/*.entity.js'],
   migrations: ['dist/migrations/*.js'],
+  synchronize: false,
 });
