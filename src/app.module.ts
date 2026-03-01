@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from '@/modules/user/user.module';
+import { LoanModule } from '@/modules/loan/loan.module';
 import { AuthModule } from '@/core/auth/auth.module';
 import { JwtAuthGuard } from '@/core/auth/jwt-auth.guard';
 import databaseConfig from './config/database.config';
@@ -31,6 +32,7 @@ import globalConfig from './config/global.config';
       inject: [ConfigService],
     }),
     UserModule,
+    LoanModule,
     AuthModule,
   ],
   controllers: [AppController],
