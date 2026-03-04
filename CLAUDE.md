@@ -61,7 +61,7 @@ src/
 | `DATABASE_PASSWORD` | `postgres` |
 | `DATABASE_NAME` | `monkey-money` |
 | `JWT_SECRET` | `your-secret-key` |
-| `PORT` | `3000` |
+| `PORT` | `5000` |
 
 `synchronize` is enabled automatically when `NODE_ENV !== 'production'`.
 
