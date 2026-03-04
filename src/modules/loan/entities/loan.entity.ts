@@ -1,6 +1,7 @@
 import {
   Entity,
   PrimaryGeneratedColumn,
+  Column,
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
@@ -15,6 +16,9 @@ import { Guarantor } from './guarantor.entity';
 export class Loan {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column()
+  loanNumber: string;
 
   @OneToOne(() => Borrower, (borrower) => borrower.loan, {
     cascade: true,
