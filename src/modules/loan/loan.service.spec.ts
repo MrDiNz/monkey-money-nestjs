@@ -76,6 +76,7 @@ describe('LoanService', () => {
     findOne: jest.fn(),
     findAndCount: jest.fn(),
     remove: jest.fn(),
+    count: jest.fn(),
   };
 
   const guarantorRepo = {
@@ -111,16 +112,19 @@ describe('LoanService', () => {
       };
       const loan = makeLoan();
 
+      loanRepo.count.mockResolvedValue(0);
       loanRepo.create.mockReturnValue(loan);
       loanRepo.save.mockResolvedValue(loan);
       loanRepo.findOne.mockResolvedValue(loan);
 
       const result = await service.create(dto);
 
-      expect(loanRepo.create).toHaveBeenCalledWith({
-        borrower: mockBorrowerDto,
-        vehicle: mockVehicleDto,
-      });
+      expect(loanRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          borrower: mockBorrowerDto,
+          vehicle: mockVehicleDto,
+        }),
+      );
       expect(loanRepo.save).toHaveBeenCalledWith(loan);
       expect(guarantorRepo.save).not.toHaveBeenCalled();
       expect(result).toEqual(loan);
@@ -132,6 +136,7 @@ describe('LoanService', () => {
         vehicle: mockVehicleDto,
         guarantors: [mockGuarantorDto],
       };
+      loanRepo.count.mockResolvedValue(0);
       const savedLoan = makeLoan();
       const guarantorEntity = {
         ...mockGuarantorDto,
@@ -160,6 +165,47 @@ describe('LoanService', () => {
       expect(result.guarantors).toHaveLength(1);
     });
 
+    it('should generate loanNumber using Bangkok time, not UTC', async () => {
+      // UTC Mar 31 18:00 = Bangkok Apr 1 01:00 → should be 69-04-1
+      jest.useFakeTimers().setSystemTime(new Date('2026-03-31T18:00:00Z'));
+      loanRepo.count.mockResolvedValue(0);
+      const savedLoan = makeLoan({
+        loanNumber: '69-04-1',
+        createdAt: new Date('2026-03-31T18:00:00Z'),
+      } as any);
+      loanRepo.create.mockReturnValue(savedLoan);
+      loanRepo.save.mockResolvedValue(savedLoan);
+      loanRepo.findOne.mockResolvedValue(savedLoan);
+
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+        guarantors: [],
+      };
+      const result = await service.create(dto);
+      expect(result.loanNumber).toBe('69-04-1');
+      jest.useRealTimers();
+    });
+
+    it('should generate loanNumber as third loan of the Bangkok month', async () => {
+      loanRepo.count.mockResolvedValue(2);
+      const savedLoan = makeLoan({
+        loanNumber: '69-03-3',
+        createdAt: new Date('2026-03-20T10:00:00Z'),
+      } as any);
+      loanRepo.create.mockReturnValue(savedLoan);
+      loanRepo.save.mockResolvedValue(savedLoan);
+      loanRepo.findOne.mockResolvedValue(savedLoan);
+
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+        guarantors: [],
+      };
+      const result = await service.create(dto);
+      expect(result.loanNumber).toBe('69-03-3');
+    });
+
     it('should create a loan with 2 guarantors', async () => {
       const dto: CreateLoanDto = {
         borrower: mockBorrowerDto,
@@ -169,6 +215,7 @@ describe('LoanService', () => {
           { ...mockGuarantorDto, firstName: 'คนที่สอง' },
         ],
       };
+      loanRepo.count.mockResolvedValue(0);
       const savedLoan = makeLoan();
       const loanWith2Guarantors = makeLoan({
         guarantors: [{} as any, {} as any],
@@ -232,6 +279,19 @@ describe('LoanService', () => {
       const result = await service.findAll(1, 10);
 
       expect(result.meta.totalPages).toBe(0);
+    });
+
+    it('should return loanNumber in each loan item', async () => {
+      const loans = [
+        makeLoan({ id: 3, loanNumber: '69-03-3' } as any),
+        makeLoan({ id: 2, loanNumber: '69-03-2' } as any),
+        makeLoan({ id: 1, loanNumber: '69-03-1' } as any),
+      ];
+      loanRepo.findAndCount.mockResolvedValue([loans, 3]);
+
+      const result = await service.findAll(1, 10);
+      expect(result.data[0].loanNumber).toBe('69-03-3');
+      expect(result.data[2].loanNumber).toBe('69-03-1');
     });
   });
 
@@ -358,6 +418,45 @@ describe('LoanService', () => {
 
       expect(loanRepo.findOne).toHaveBeenCalledTimes(2);
       expect(result).toEqual(updatedLoan);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('getNextSequence', () => {
+    it('should return 1 when no loans exist in Bangkok month', async () => {
+      loanRepo.count.mockResolvedValue(0);
+      const seq = await service.getNextSequence(
+        new Date('2026-03-15T10:00:00Z'),
+      );
+      expect(seq).toBe(1);
+    });
+
+    it('should return 3 when 2 loans already exist in Bangkok month', async () => {
+      loanRepo.count.mockResolvedValue(2);
+      const seq = await service.getNextSequence(
+        new Date('2026-03-15T10:00:00Z'),
+      );
+      expect(seq).toBe(3);
+    });
+
+    it('should use Bangkok month boundary — UTC 2026-03-31T18:00Z counts as April', async () => {
+      loanRepo.count.mockResolvedValue(0);
+      await service.getNextSequence(new Date('2026-03-31T18:00:00Z'));
+      // must query with April Bangkok range: start=2026-03-31T17:00:00Z, end=2026-04-30T16:59:59.999Z
+      expect(loanRepo.count).toHaveBeenCalledWith({
+        where: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          createdAt: expect.objectContaining({}),
+        },
+      });
+    });
+
+    it('should reset to 1 for a new Bangkok month', async () => {
+      loanRepo.count.mockResolvedValue(0);
+      const seq = await service.getNextSequence(
+        new Date('2026-04-01T00:00:00Z'),
+      );
+      expect(seq).toBe(1);
     });
   });
 

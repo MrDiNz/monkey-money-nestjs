@@ -4,12 +4,17 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { Loan } from './entities/loan.entity';
 import { Guarantor } from './entities/guarantor.entity';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { PaginatedLoanDto } from './dto/paginated-loan.dto';
+import {
+  generateLoanNumber,
+  getMonthRangeUTC,
+  getBangkokParts,
+} from './utils/loan-number.util';
 
 @Injectable()
 export class LoanService {
@@ -20,9 +25,21 @@ export class LoanService {
     private readonly guarantorRepository: Repository<Guarantor>,
   ) {}
 
+  async getNextSequence(date: Date): Promise<number> {
+    const { year, month } = getBangkokParts(date);
+    const { start, end } = getMonthRangeUTC(year, month);
+    const count = await this.loanRepository.count({
+      where: { createdAt: Between(start, end) },
+    });
+    return count + 1;
+  }
+
   async create(createLoanDto: CreateLoanDto): Promise<Loan> {
     const { guarantors, ...loanData } = createLoanDto;
-    const loan = this.loanRepository.create(loanData);
+    const now = new Date();
+    const seq = await this.getNextSequence(now);
+    const loanNumber = generateLoanNumber(now, seq);
+    const loan = this.loanRepository.create({ ...loanData, loanNumber });
     const saved = await this.loanRepository.save(loan);
 
     if (guarantors && guarantors.length > 0) {

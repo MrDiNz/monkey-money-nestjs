@@ -1,8 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing'
-import { getRepositoryToken } from '@nestjs/typeorm'
-import { JwtService } from '@nestjs/jwt'
-import { UserService } from './user.service'
-import { User } from './entities/user.entity'
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
+import { UserService } from './user.service';
+import { User } from './entities/user.entity';
 
 const mockUserRepository = {
   create: jest.fn(),
@@ -17,12 +17,12 @@ const mockUserRepository = {
     addSelect: jest.fn().mockReturnThis(),
     getOne: jest.fn(),
   })),
-}
+};
 
-const mockJwtService = { sign: jest.fn() }
+const mockJwtService = { sign: jest.fn() };
 
 describe('UserService', () => {
-  let service: UserService
+  let service: UserService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,12 +31,12 @@ describe('UserService', () => {
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
         { provide: JwtService, useValue: mockJwtService },
       ],
-    }).compile()
+    }).compile();
 
-    service = module.get<UserService>(UserService)
-  })
+    service = module.get<UserService>(UserService);
+  });
 
   it('should be defined', () => {
-    expect(service).toBeDefined()
-  })
-})
+    expect(service).toBeDefined();
+  });
+});
