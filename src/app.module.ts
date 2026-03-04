@@ -28,6 +28,8 @@ import globalConfig from './config/global.config';
         database: configService.get<string>('database.database'),
         autoLoadEntities: true,
         synchronize: configService.get<boolean>('database.synchronize'),
+        migrationsRun: configService.get<boolean>('database.migrationsRun'),
+        migrations: ['dist/migrations/*.js'],
       }),
       inject: [ConfigService],
     }),
