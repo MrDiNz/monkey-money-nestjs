@@ -1,8 +1,11 @@
 import {
   IsArray,
+  IsInt,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
+  Min,
   ValidateNested,
   ArrayMaxSize,
 } from 'class-validator';
@@ -109,6 +112,17 @@ export class VehicleDto {
   @IsString()
   @IsNotEmpty()
   licensePlateProvince: string;
+
+  @ApiProperty({ example: 12000, description: 'เลขไมล์รถ (กิโลเมตร)' })
+  @IsInt()
+  @Min(0)
+  mileage: number;
+
+  @ApiProperty({ example: 50000, description: 'ราคาประเมิน', required: false, nullable: true })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  appraisedValue?: number | null;
 }
 
 export class GuarantorDto extends BorrowerDto {}

@@ -36,6 +36,7 @@ const mockVehicleDto: VehicleDto = {
   engineNumber: 'ENG456',
   licensePlateNumber: 'กข 1234',
   licensePlateProvince: 'กรุงเทพ',
+  mileage: 12000,
 };
 
 const mockGuarantorDto: GuarantorDto = {
@@ -56,6 +57,7 @@ const makeLoan = (overrides: Partial<Loan> = {}): Loan =>
     },
     vehicle: {
       ...mockVehicleDto,
+      appraisedValue: null,
       id: 1,
       loan: null as any,
       createdAt: new Date(),
@@ -232,6 +234,48 @@ describe('LoanService', () => {
       };
       const result = await service.create(dto);
       expect(result.loanNumber).toBe('69-03-3');
+    });
+
+    it('should create a loan with mileage and no appraisedValue', async () => {
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: { ...mockVehicleDto, mileage: 15000 },
+        guarantors: [],
+      };
+      const loan = makeLoan();
+      loanRepo.count.mockResolvedValue(0);
+      loanRepo.create.mockReturnValue(loan);
+      loanRepo.save.mockResolvedValue(loan);
+      loanRepo.findOne.mockResolvedValue(loan);
+
+      await service.create(dto);
+
+      expect(loanRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          vehicle: expect.objectContaining({ mileage: 15000 }),
+        }),
+      );
+    });
+
+    it('should create a loan with mileage and appraisedValue', async () => {
+      const dto: CreateLoanDto = {
+        borrower: mockBorrowerDto,
+        vehicle: { ...mockVehicleDto, mileage: 20000, appraisedValue: 50000 },
+        guarantors: [],
+      };
+      const loan = makeLoan();
+      loanRepo.count.mockResolvedValue(0);
+      loanRepo.create.mockReturnValue(loan);
+      loanRepo.save.mockResolvedValue(loan);
+      loanRepo.findOne.mockResolvedValue(loan);
+
+      await service.create(dto);
+
+      expect(loanRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          vehicle: expect.objectContaining({ mileage: 20000, appraisedValue: 50000 }),
+        }),
+      );
     });
 
     it('should create a loan with 2 guarantors', async () => {
@@ -471,6 +515,32 @@ describe('LoanService', () => {
       await service.update(1, dto);
 
       expect(loan.vehicle.color).toBe('น้ำเงิน');
+    });
+
+    it('should patch vehicle mileage', async () => {
+      const loan = makeLoan();
+      loanRepo.findOne.mockResolvedValue(loan);
+      loanRepo.save.mockResolvedValue(loan);
+
+      const dto: UpdateLoanDto = {
+        vehicle: { mileage: 30000 } as VehicleDto,
+      };
+      await service.update(1, dto);
+
+      expect(loan.vehicle.mileage).toBe(30000);
+    });
+
+    it('should patch vehicle appraisedValue', async () => {
+      const loan = makeLoan();
+      loanRepo.findOne.mockResolvedValue(loan);
+      loanRepo.save.mockResolvedValue(loan);
+
+      const dto: UpdateLoanDto = {
+        vehicle: { appraisedValue: 75000 } as VehicleDto,
+      };
+      await service.update(1, dto);
+
+      expect(loan.vehicle.appraisedValue).toBe(75000);
     });
 
     it('should replace guarantors with new list', async () => {
