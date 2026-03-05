@@ -37,6 +37,12 @@ export class Vehicle {
   @Column()
   licensePlateProvince: string;
 
+  @Column({ type: 'int' })
+  mileage: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  appraisedValue: number | null;
+
   @OneToOne(() => Loan, (loan) => loan.vehicle)
   loan: Loan;
 
