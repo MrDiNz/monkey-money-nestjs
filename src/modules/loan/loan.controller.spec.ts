@@ -119,19 +119,42 @@ describe('LoanController', () => {
     it('should convert string query params to numbers and delegate to service', async () => {
       service.findAll.mockResolvedValue(mockPaginated);
 
-      const result = await controller.findAll('2', '5');
+      const result = await controller.findAll('2', '5', undefined);
 
-      expect(service.findAll).toHaveBeenCalledWith(2, 5);
+      expect(service.findAll).toHaveBeenCalledWith(2, 5, undefined);
       expect(result).toEqual(mockPaginated);
     });
 
     it('should use default values (page=1, limit=10) when not supplied', async () => {
       service.findAll.mockResolvedValue(mockPaginated);
 
-      // default values are assigned by NestJS as string '1' / '10'
-      await controller.findAll('1', '10');
+      await controller.findAll('1', '10', undefined);
 
-      expect(service.findAll).toHaveBeenCalledWith(1, 10);
+      expect(service.findAll).toHaveBeenCalledWith(1, 10, undefined);
+    });
+
+    it('should pass search param to service', async () => {
+      service.findAll.mockResolvedValue(mockPaginated);
+
+      await controller.findAll('1', '10', 'สมชาย');
+
+      expect(service.findAll).toHaveBeenCalledWith(1, 10, 'สมชาย');
+    });
+
+    it('should pass loanNumber search to service', async () => {
+      service.findAll.mockResolvedValue(mockPaginated);
+
+      await controller.findAll('1', '10', '69-03-1');
+
+      expect(service.findAll).toHaveBeenCalledWith(1, 10, '69-03-1');
+    });
+
+    it('should pass empty search string to service', async () => {
+      service.findAll.mockResolvedValue(mockPaginated);
+
+      await controller.findAll('1', '10', '');
+
+      expect(service.findAll).toHaveBeenCalledWith(1, 10, '');
     });
 
     it('should return paginated result from service', async () => {
@@ -141,7 +164,7 @@ describe('LoanController', () => {
       };
       service.findAll.mockResolvedValue(paginated);
 
-      const result = await controller.findAll('3', '5');
+      const result = await controller.findAll('3', '5', undefined);
 
       expect(result).toEqual(paginated);
     });

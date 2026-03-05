@@ -39,12 +39,18 @@ export class LoanController {
   @ApiOperation({ summary: 'รายการสัญญา (paginated)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 10 })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'ค้นหาจากชื่อ, นามสกุล, เลขบัตร, ทะเบียนรถ, หรือเลขที่รายการ',
+  })
   @ApiResponse({ status: 200, type: PaginatedLoanDto })
   findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '10',
+    @Query('search') search?: string,
   ): Promise<PaginatedLoanDto> {
-    return this.loanService.findAll(+page, +limit);
+    return this.loanService.findAll(+page, +limit, search);
   }
 
   @Get(':id')

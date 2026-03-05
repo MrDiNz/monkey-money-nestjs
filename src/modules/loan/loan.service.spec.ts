@@ -67,6 +67,17 @@ const makeLoan = (overrides: Partial<Loan> = {}): Loan =>
     ...overrides,
   }) as Loan;
 
+// ─── QueryBuilder mock ──────────────────────────────────────────────────────
+
+const mockQb = {
+  leftJoinAndSelect: jest.fn().mockReturnThis(),
+  orderBy: jest.fn().mockReturnThis(),
+  skip: jest.fn().mockReturnThis(),
+  take: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  getManyAndCount: jest.fn(),
+};
+
 describe('LoanService', () => {
   let service: LoanService;
 
@@ -74,7 +85,7 @@ describe('LoanService', () => {
     create: jest.fn(),
     save: jest.fn(),
     findOne: jest.fn(),
-    findAndCount: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(mockQb),
     remove: jest.fn(),
     count: jest.fn(),
   };
@@ -86,6 +97,15 @@ describe('LoanService', () => {
   };
 
   beforeEach(async () => {
+    // Re-setup mockQb after clearAllMocks resets call tracking.
+    // Implementation survives clearAllMocks, but we re-set mockReturnThis to be safe.
+    mockQb.leftJoinAndSelect.mockReturnThis();
+    mockQb.orderBy.mockReturnThis();
+    mockQb.skip.mockReturnThis();
+    mockQb.take.mockReturnThis();
+    mockQb.where.mockReturnThis();
+    loanRepo.createQueryBuilder.mockReturnValue(mockQb);
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LoanService,
@@ -96,6 +116,14 @@ describe('LoanService', () => {
 
     service = module.get<LoanService>(LoanService);
     jest.clearAllMocks();
+
+    // Re-setup after clearAllMocks
+    mockQb.leftJoinAndSelect.mockReturnThis();
+    mockQb.orderBy.mockReturnThis();
+    mockQb.skip.mockReturnThis();
+    mockQb.take.mockReturnThis();
+    mockQb.where.mockReturnThis();
+    loanRepo.createQueryBuilder.mockReturnValue(mockQb);
   });
 
   it('should be defined', () => {
@@ -236,37 +264,136 @@ describe('LoanService', () => {
 
   // ---------------------------------------------------------------------------
   describe('findAll', () => {
-    it('should return paginated loans for page 1', async () => {
-      const loans = [makeLoan()];
-      loanRepo.findAndCount.mockResolvedValue([loans, 1]);
+    it('TC-BE-01: no search param → returns all loans without WHERE clause', async () => {
+      const loans = [makeLoan(), makeLoan(), makeLoan()];
+      mockQb.getManyAndCount.mockResolvedValue([loans, 3]);
 
-      const result = await service.findAll(1, 10);
+      const result = await service.findAll(1, 10, undefined);
 
-      expect(loanRepo.findAndCount).toHaveBeenCalledWith({
-        skip: 0,
-        take: 10,
-        order: { createdAt: 'DESC' },
-      });
+      expect(mockQb.where).not.toHaveBeenCalled();
       expect(result).toEqual({
         data: loans,
-        meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+        meta: { total: 3, page: 1, limit: 10, totalPages: 1 },
       });
     });
 
-    it('should skip records correctly for page 2', async () => {
-      loanRepo.findAndCount.mockResolvedValue([[], 25]);
+    it('TC-BE-02: search by firstName applies ILIKE with correct term', async () => {
+      const loans = [makeLoan()];
+      mockQb.getManyAndCount.mockResolvedValue([loans, 1]);
 
-      await service.findAll(2, 10);
+      await service.findAll(1, 10, 'สม');
 
-      expect(loanRepo.findAndCount).toHaveBeenCalledWith({
-        skip: 10,
-        take: 10,
-        order: { createdAt: 'DESC' },
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('borrower.firstName ILIKE :term'),
+        { term: '%สม%' },
+      );
+    });
+
+    it('TC-BE-03: search by lastName applies ILIKE with correct term', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll(1, 10, 'ใจดี');
+
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('borrower.lastName ILIKE :term'),
+        { term: '%ใจดี%' },
+      );
+    });
+
+    it('TC-BE-04: search by nationalId applies ILIKE with correct term', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll(1, 10, '12345');
+
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('borrower.nationalId ILIKE :term'),
+        { term: '%12345%' },
+      );
+    });
+
+    it('TC-BE-05: search by licensePlateNumber applies ILIKE with correct term', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll(1, 10, 'กข');
+
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('vehicle.licensePlateNumber ILIKE :term'),
+        { term: '%กข%' },
+      );
+    });
+
+    it('TC-BE-06: search by loanNumber applies ILIKE with correct term', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll(1, 10, '69-03');
+
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('loan.loanNumber ILIKE :term'),
+        { term: '%69-03%' },
+      );
+    });
+
+    it('TC-BE-07: search by exact loanNumber returns matching loan', async () => {
+      const matchedLoan = makeLoan({ loanNumber: '69-03-1' } as any);
+      mockQb.getManyAndCount.mockResolvedValue([[matchedLoan], 1]);
+
+      const result = await service.findAll(1, 10, '69-03-1');
+
+      expect(mockQb.where).toHaveBeenCalledWith(
+        expect.stringContaining('loan.loanNumber ILIKE :term'),
+        { term: '%69-03-1%' },
+      );
+      expect(result.data[0].loanNumber).toBe('69-03-1');
+    });
+
+    it('TC-BE-08: empty search string → no WHERE clause (returns all)', async () => {
+      const loans = [makeLoan(), makeLoan()];
+      mockQb.getManyAndCount.mockResolvedValue([loans, 2]);
+
+      const result = await service.findAll(1, 10, '');
+
+      expect(mockQb.where).not.toHaveBeenCalled();
+      expect(result.meta.total).toBe(2);
+    });
+
+    it('TC-BE-09: no match → empty results with total=0', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.findAll(1, 10, 'xxxxxxxxxx');
+
+      expect(result).toEqual({
+        data: [],
+        meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
       });
+    });
+
+    it('TC-BE-10: search + pagination applies correct skip and take', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 15]);
+
+      await service.findAll(2, 10, 'สม');
+
+      expect(mockQb.skip).toHaveBeenCalledWith(10);
+      expect(mockQb.take).toHaveBeenCalledWith(10);
+      expect(mockQb.where).toHaveBeenCalledWith(expect.any(String), {
+        term: '%สม%',
+      });
+    });
+
+    it('TC-BE-11: WHERE clause has OR across all 5 fields', async () => {
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      await service.findAll(1, 10, 'test');
+
+      const whereArg = mockQb.where.mock.calls[0][0] as string;
+      expect(whereArg).toContain('borrower.firstName ILIKE :term');
+      expect(whereArg).toContain('borrower.lastName ILIKE :term');
+      expect(whereArg).toContain('borrower.nationalId ILIKE :term');
+      expect(whereArg).toContain('vehicle.licensePlateNumber ILIKE :term');
+      expect(whereArg).toContain('loan.loanNumber ILIKE :term');
     });
 
     it('should calculate totalPages correctly when not evenly divisible', async () => {
-      loanRepo.findAndCount.mockResolvedValue([[], 25]);
+      mockQb.getManyAndCount.mockResolvedValue([[], 25]);
 
       const result = await service.findAll(1, 10);
 
@@ -274,7 +401,7 @@ describe('LoanService', () => {
     });
 
     it('should return totalPages=0 when total is 0', async () => {
-      loanRepo.findAndCount.mockResolvedValue([[], 0]);
+      mockQb.getManyAndCount.mockResolvedValue([[], 0]);
 
       const result = await service.findAll(1, 10);
 
@@ -287,7 +414,7 @@ describe('LoanService', () => {
         makeLoan({ id: 2, loanNumber: '69-03-2' } as any),
         makeLoan({ id: 1, loanNumber: '69-03-1' } as any),
       ];
-      loanRepo.findAndCount.mockResolvedValue([loans, 3]);
+      mockQb.getManyAndCount.mockResolvedValue([loans, 3]);
 
       const result = await service.findAll(1, 10);
       expect(result.data[0].loanNumber).toBe('69-03-3');

@@ -52,12 +52,28 @@ export class LoanService {
     return this.findOne(saved.id);
   }
 
-  async findAll(page: number, limit: number): Promise<PaginatedLoanDto> {
-    const [data, total] = await this.loanRepository.findAndCount({
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { createdAt: 'DESC' },
-    });
+  async findAll(
+    page: number,
+    limit: number,
+    search?: string,
+  ): Promise<PaginatedLoanDto> {
+    const qb = this.loanRepository
+      .createQueryBuilder('loan')
+      .leftJoinAndSelect('loan.borrower', 'borrower')
+      .leftJoinAndSelect('loan.vehicle', 'vehicle')
+      .leftJoinAndSelect('loan.guarantors', 'guarantors')
+      .orderBy('loan.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (search && search.trim()) {
+      qb.where(
+        'borrower.firstName ILIKE :term OR borrower.lastName ILIKE :term OR borrower.nationalId ILIKE :term OR vehicle.licensePlateNumber ILIKE :term OR loan.loanNumber ILIKE :term',
+        { term: `%${search}%` },
+      );
+    }
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       data,
