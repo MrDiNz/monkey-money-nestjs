@@ -190,6 +190,10 @@ async function main() {
 
     const loan = loanRepo.create({
       loanNumber,
+      loanAmount: 5000 + (i % 10) * 1000,
+      numberOfInstallments: 12 + (i % 4) * 6,
+      interestRate: 1 + (i % 5) * 0.5,
+      paymentFrequency: [1, 2, 4][i % 3],
       borrower: {
         firstName,
         lastName,
@@ -213,6 +217,8 @@ async function main() {
         engineNumber,
         licensePlateNumber: `${platePrefix} ${plateNumber}`,
         licensePlateProvince: province,
+        mileage: 1000 + i * 50,
+        appraisedValue: i % 5 === 0 ? null : 30000 + (i % 20) * 5000,
       } as Vehicle,
     });
 
