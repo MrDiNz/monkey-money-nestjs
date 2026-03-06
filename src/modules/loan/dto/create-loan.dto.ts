@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -11,6 +12,31 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+
+export class LoanTermsDto {
+  @ApiProperty({ example: 50000, description: 'วงเงินกู้ (บาท)' })
+  @IsNumber()
+  @Min(1)
+  loanAmount: number;
+
+  @ApiProperty({ example: 12, description: 'จำนวนงวด' })
+  @IsInt()
+  @Min(1)
+  numberOfInstallments: number;
+
+  @ApiProperty({ example: 3.75, description: 'อัตราดอกเบี้ย % ต่อปี' })
+  @IsNumber()
+  @Min(0)
+  interestRate: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'รอบงวดชำระ: 1, 2, หรือ 4 ครั้งต่อเดือน',
+    enum: [1, 2, 4],
+  })
+  @IsIn([1, 2, 4])
+  paymentFrequency: number;
+}
 
 export class BorrowerDto {
   @ApiProperty({ example: 'สมชาย' })
@@ -118,7 +144,12 @@ export class VehicleDto {
   @Min(0)
   mileage: number;
 
-  @ApiProperty({ example: 50000, description: 'ราคาประเมิน', required: false, nullable: true })
+  @ApiProperty({
+    example: 50000,
+    description: 'ราคาประเมิน',
+    required: false,
+    nullable: true,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)
@@ -127,7 +158,7 @@ export class VehicleDto {
 
 export class GuarantorDto extends BorrowerDto {}
 
-export class CreateLoanDto {
+export class CreateLoanDto extends LoanTermsDto {
   @ApiProperty({ type: BorrowerDto })
   @ValidateNested()
   @Type(() => BorrowerDto)
