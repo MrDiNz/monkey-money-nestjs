@@ -45,9 +45,21 @@ const mockGuarantorDto: GuarantorDto = {
   nationalId: '9876543210123',
 };
 
+const mockLoanTermsDto = {
+  loanAmount: 50000,
+  numberOfInstallments: 12,
+  interestRate: 3.75,
+  paymentFrequency: 1,
+};
+
 const makeLoan = (overrides: Partial<Loan> = {}): Loan =>
   ({
     id: 1,
+    loanNumber: '69-03-1',
+    loanAmount: 50000,
+    numberOfInstallments: 12,
+    interestRate: 3.75,
+    paymentFrequency: 1,
     borrower: {
       ...mockBorrowerDto,
       id: 1,
@@ -136,6 +148,7 @@ describe('LoanService', () => {
   describe('create', () => {
     it('should create a loan without guarantors', async () => {
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [],
@@ -162,6 +175,7 @@ describe('LoanService', () => {
 
     it('should create a loan with 1 guarantor', async () => {
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [mockGuarantorDto],
@@ -208,6 +222,7 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(savedLoan);
 
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [],
@@ -228,6 +243,7 @@ describe('LoanService', () => {
       loanRepo.findOne.mockResolvedValue(savedLoan);
 
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [],
@@ -238,6 +254,7 @@ describe('LoanService', () => {
 
     it('should create a loan with mileage and no appraisedValue', async () => {
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: { ...mockVehicleDto, mileage: 15000 },
         guarantors: [],
@@ -259,6 +276,7 @@ describe('LoanService', () => {
 
     it('should create a loan with mileage and appraisedValue', async () => {
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: { ...mockVehicleDto, mileage: 20000, appraisedValue: 50000 },
         guarantors: [],
@@ -273,13 +291,17 @@ describe('LoanService', () => {
 
       expect(loanRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          vehicle: expect.objectContaining({ mileage: 20000, appraisedValue: 50000 }),
+          vehicle: expect.objectContaining({
+            mileage: 20000,
+            appraisedValue: 50000,
+          }),
         }),
       );
     });
 
     it('should create a loan with 2 guarantors', async () => {
       const dto: CreateLoanDto = {
+        ...mockLoanTermsDto,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [
@@ -303,6 +325,82 @@ describe('LoanService', () => {
 
       expect(guarantorRepo.create).toHaveBeenCalledTimes(2);
       expect(result.guarantors).toHaveLength(2);
+    });
+
+    describe('loan terms persisted on create', () => {
+      it('TC-BE-TERMS-01: should persist all 4 loan term fields', async () => {
+        const dto: CreateLoanDto = {
+          loanAmount: 50000,
+          numberOfInstallments: 12,
+          interestRate: 3.75,
+          paymentFrequency: 1,
+          borrower: mockBorrowerDto,
+          vehicle: mockVehicleDto,
+          guarantors: [],
+        };
+        const loan = makeLoan();
+        loanRepo.count.mockResolvedValue(0);
+        loanRepo.create.mockReturnValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+        loanRepo.findOne.mockResolvedValue(loan);
+
+        await service.create(dto);
+
+        expect(loanRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            loanAmount: 50000,
+            numberOfInstallments: 12,
+            interestRate: 3.75,
+            paymentFrequency: 1,
+          }),
+        );
+      });
+
+      it('TC-BE-TERMS-02: should persist paymentFrequency=2', async () => {
+        const dto: CreateLoanDto = {
+          loanAmount: 30000,
+          numberOfInstallments: 24,
+          interestRate: 5.0,
+          paymentFrequency: 2,
+          borrower: mockBorrowerDto,
+          vehicle: mockVehicleDto,
+          guarantors: [],
+        };
+        const loan = makeLoan();
+        loanRepo.count.mockResolvedValue(0);
+        loanRepo.create.mockReturnValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+        loanRepo.findOne.mockResolvedValue(loan);
+
+        await service.create(dto);
+
+        expect(loanRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({ paymentFrequency: 2 }),
+        );
+      });
+
+      it('TC-BE-TERMS-03: should persist paymentFrequency=4', async () => {
+        const dto: CreateLoanDto = {
+          loanAmount: 20000,
+          numberOfInstallments: 6,
+          interestRate: 2.5,
+          paymentFrequency: 4,
+          borrower: mockBorrowerDto,
+          vehicle: mockVehicleDto,
+          guarantors: [],
+        };
+        const loan = makeLoan();
+        loanRepo.count.mockResolvedValue(0);
+        loanRepo.create.mockReturnValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+        loanRepo.findOne.mockResolvedValue(loan);
+
+        await service.create(dto);
+
+        expect(loanRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({ paymentFrequency: 4 }),
+        );
+      });
     });
   });
 
@@ -615,6 +713,44 @@ describe('LoanService', () => {
 
       expect(loanRepo.findOne).toHaveBeenCalledTimes(2);
       expect(result).toEqual(updatedLoan);
+    });
+
+    describe('loan terms update', () => {
+      it('TC-BE-TERMS-04: should patch loanAmount on existing loan', async () => {
+        const loan = makeLoan();
+        loanRepo.findOne.mockResolvedValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+
+        const dto: UpdateLoanDto = { loanAmount: 99000 };
+        await service.update(1, dto);
+
+        expect(loan.loanAmount).toBe(99000);
+        expect(loanRepo.save).toHaveBeenCalledWith(loan);
+      });
+
+      it('TC-BE-TERMS-05: should patch interestRate on existing loan', async () => {
+        const loan = makeLoan();
+        loanRepo.findOne.mockResolvedValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+
+        const dto: UpdateLoanDto = { interestRate: 6.5 };
+        await service.update(1, dto);
+
+        expect(loan.interestRate).toBe(6.5);
+        expect(loanRepo.save).toHaveBeenCalledWith(loan);
+      });
+
+      it('TC-BE-TERMS-06: should patch paymentFrequency on existing loan', async () => {
+        const loan = makeLoan();
+        loanRepo.findOne.mockResolvedValue(loan);
+        loanRepo.save.mockResolvedValue(loan);
+
+        const dto: UpdateLoanDto = { paymentFrequency: 4 };
+        await service.update(1, dto);
+
+        expect(loan.paymentFrequency).toBe(4);
+        expect(loanRepo.save).toHaveBeenCalledWith(loan);
+      });
     });
   });
 

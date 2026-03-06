@@ -20,6 +20,18 @@ export class Loan {
   @Column()
   loanNumber: string;
 
+  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  loanAmount: number;
+
+  @Column({ type: 'int' })
+  numberOfInstallments: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  interestRate: number;
+
+  @Column({ type: 'int' })
+  paymentFrequency: number;
+
   @OneToOne(() => Borrower, (borrower) => borrower.loan, {
     cascade: true,
     eager: true,

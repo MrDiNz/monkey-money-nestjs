@@ -35,6 +35,7 @@ const mockVehicleDto: VehicleDto = {
   engineNumber: 'ENG456',
   licensePlateNumber: 'กข 1234',
   licensePlateProvince: 'กรุงเทพ',
+  mileage: 12000,
 };
 
 const mockGuarantorDto: GuarantorDto = {
@@ -45,6 +46,11 @@ const mockGuarantorDto: GuarantorDto = {
 
 const mockLoan = {
   id: 1,
+  loanNumber: '69-03-1',
+  loanAmount: 50000,
+  numberOfInstallments: 12,
+  interestRate: 3.75,
+  paymentFrequency: 1,
   borrower: mockBorrowerDto,
   vehicle: mockVehicleDto,
   guarantors: [],
@@ -88,6 +94,10 @@ describe('LoanController', () => {
   describe('create', () => {
     it('should call service.create with the dto and return the result', async () => {
       const dto: CreateLoanDto = {
+        loanAmount: 50000,
+        numberOfInstallments: 12,
+        interestRate: 3.75,
+        paymentFrequency: 1,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [],
@@ -102,9 +112,30 @@ describe('LoanController', () => {
 
     it('should call service.create with guarantors', async () => {
       const dto: CreateLoanDto = {
+        loanAmount: 50000,
+        numberOfInstallments: 12,
+        interestRate: 3.75,
+        paymentFrequency: 1,
         borrower: mockBorrowerDto,
         vehicle: mockVehicleDto,
         guarantors: [mockGuarantorDto],
+      };
+      service.create.mockResolvedValue(mockLoan);
+
+      await controller.create(dto);
+
+      expect(service.create).toHaveBeenCalledWith(dto);
+    });
+
+    it('TC-CT-TERMS-01: should pass non-default paymentFrequency through to service', async () => {
+      const dto: CreateLoanDto = {
+        loanAmount: 30000,
+        numberOfInstallments: 24,
+        interestRate: 5.0,
+        paymentFrequency: 2,
+        borrower: mockBorrowerDto,
+        vehicle: mockVehicleDto,
+        guarantors: [],
       };
       service.create.mockResolvedValue(mockLoan);
 
