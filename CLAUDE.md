@@ -37,6 +37,7 @@ src/
   migrations/            # TypeORM migration files
   modules/
     user/                # User CRUD + login
+    loan/                # Loan CRUD + loanNumber sequencing
 ```
 
 ## Key Patterns
@@ -104,3 +105,11 @@ const endUTC   = new Date(Date.UTC(year, month,     1) - 7 * 3600_000 - 1)
 ## Development Workflow
 
 TDD approach: write/update tests before implementation, confirm failure, then implement. All code must pass `pnpm run lint` and `pnpm run build` (TypeScript) without errors before committing.
+
+## Seed
+
+```bash
+pnpm run seed   # Insert 200 diverse loans for development/testing
+```
+
+**Keep `src/seeds/seed-loans.ts` in sync with entities.** When a migration adds a NOT NULL column, update the seed too — TypeORM throws a `23502` constraint error at runtime, not compile time.
