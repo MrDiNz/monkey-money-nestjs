@@ -102,6 +102,11 @@ const endUTC   = new Date(Date.UTC(year, month,     1) - 7 * 3600_000 - 1)
 
 **Never** call `.getFullYear()`, `.getMonth()`, or `.getDate()` directly on a UTC `Date` for business calendar logic — these return UTC values, not Bangkok values.
 
+## Sentry
+
+- `src/instrument.ts` must start with `import 'dotenv/config'` — it runs before `ConfigModule` loads `.env`, so `process.env` vars aren't populated otherwise
+- `SentryGlobalFilter` must be registered via `APP_FILTER` provider in `app.module.ts` (not `app.useGlobalFilters()` in `main.ts`)
+
 ## Development Workflow
 
 TDD approach: write/update tests before implementation, confirm failure, then implement. All code must pass `pnpm run lint` and `pnpm run build` (TypeScript) without errors before committing.
