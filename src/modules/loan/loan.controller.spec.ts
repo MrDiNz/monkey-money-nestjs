@@ -73,6 +73,7 @@ describe('LoanController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    getInstallmentSchedule: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -270,6 +271,30 @@ describe('LoanController', () => {
       await controller.remove('99');
 
       expect(service.remove).toHaveBeenCalledWith(99);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  describe('getInstallmentSchedule', () => {
+    it('should convert string id to number and return schedule', async () => {
+      const mockSchedule = [
+        {
+          installmentNo: 1,
+          amount: 1033.5,
+          dueDate: new Date('2026-02-15'),
+          paidDate: null,
+          remainingBalance: 1033.5,
+          outstandingAmount: 0,
+          status: 'ยังไม่ถึงกำหนด',
+          remark: null,
+        },
+      ];
+      service.getInstallmentSchedule.mockResolvedValue(mockSchedule as any);
+
+      const result = await controller.getInstallmentSchedule('1');
+
+      expect(service.getInstallmentSchedule).toHaveBeenCalledWith(1);
+      expect(result).toEqual(mockSchedule);
     });
   });
 });
