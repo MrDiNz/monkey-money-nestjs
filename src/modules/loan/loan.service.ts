@@ -10,12 +10,14 @@ import { Guarantor } from './entities/guarantor.entity';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { PaginatedLoanDto } from './dto/paginated-loan.dto';
+import { InstallmentItemDto } from './dto/installment-item.dto';
 import {
   generateLoanNumber,
   getMonthRangeUTC,
   getBangkokParts,
 } from './utils/loan-number.util';
 import { PaymentService } from '@/modules/payment/payment.service';
+import { calculateInstallmentSchedule } from './utils/installment.util';
 
 @Injectable()
 export class LoanService {
@@ -130,5 +132,13 @@ export class LoanService {
   async remove(id: number): Promise<void> {
     const loan = await this.findOne(id);
     await this.loanRepository.remove(loan);
+  }
+
+  async getInstallmentSchedule(id: number): Promise<InstallmentItemDto[]> {
+    const loan = await this.loanRepository.findOne({ where: { id } });
+    if (!loan) {
+      throw new NotFoundException(`Loan with ID ${id} not found`);
+    }
+    return calculateInstallmentSchedule(loan);
   }
 }

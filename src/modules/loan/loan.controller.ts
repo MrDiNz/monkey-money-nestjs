@@ -20,6 +20,7 @@ import { LoanService } from './loan.service';
 import { CreateLoanDto } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
 import { PaginatedLoanDto } from './dto/paginated-loan.dto';
+import { InstallmentItemDto } from './dto/installment-item.dto';
 import { Loan } from './entities/loan.entity';
 
 @ApiTags('loan')
@@ -81,5 +82,16 @@ export class LoanController {
   @ApiResponse({ status: 404, description: 'Loan not found' })
   remove(@Param('id') id: string): Promise<void> {
     return this.loanService.remove(+id);
+  }
+
+  @Get(':id/installments')
+  @ApiOperation({ summary: 'ดูตารางงวดผ่อนชำระทั้งหมด' })
+  @ApiParam({ name: 'id', type: 'integer' })
+  @ApiResponse({ status: 200, type: [InstallmentItemDto] })
+  @ApiResponse({ status: 404, description: 'Loan not found' })
+  getInstallmentSchedule(
+    @Param('id') id: string,
+  ): Promise<InstallmentItemDto[]> {
+    return this.loanService.getInstallmentSchedule(+id);
   }
 }

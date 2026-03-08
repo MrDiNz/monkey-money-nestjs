@@ -12,6 +12,10 @@ import {
   GuarantorDto,
 } from './dto/create-loan.dto';
 import { UpdateLoanDto } from './dto/update-loan.dto';
+import {
+  roundInstallmentAmount,
+  calculateInstallmentSchedule,
+} from './utils/installment.util';
 
 const mockBorrowerDto: BorrowerDto = {
   firstName: 'สมชาย',
@@ -820,5 +824,143 @@ describe('LoanService', () => {
         'Loan with ID 99 not found',
       );
     });
+  });
+});
+
+// =============================================================================
+// Installment utility tests (pure functions — no DI needed)
+// =============================================================================
+
+describe('roundInstallmentAmount', () => {
+  it('TC-BE-01: already ends in .00 → unchanged', () => {
+    expect(roundInstallmentAmount(500.0)).toBe(500.0);
+  });
+
+  it('TC-BE-02: already ends in .50 → unchanged', () => {
+    expect(roundInstallmentAmount(100.5)).toBe(100.5);
+  });
+
+  it('TC-BE-03: 100.01 → 100.50', () => {
+    expect(roundInstallmentAmount(100.01)).toBe(100.5);
+  });
+
+  it('TC-BE-04: 100.51 → 101.00', () => {
+    expect(roundInstallmentAmount(100.51)).toBe(101.0);
+  });
+
+  it('TC-BE-05: 100.25 → 100.50', () => {
+    expect(roundInstallmentAmount(100.25)).toBe(100.5);
+  });
+});
+
+describe('calculateInstallmentSchedule', () => {
+  const baseLoan = {
+    loanAmount: 10000,
+    interestRate: 24, // 24% per year
+    numberOfInstallments: 12,
+    paymentFrequency: 1, // 1x per month
+    createdAt: new Date('2026-01-15'),
+  };
+
+  it('TC-BE-06: returns numberOfInstallments number of items', () => {
+    const result = calculateInstallmentSchedule(baseLoan);
+    expect(result).toHaveLength(12);
+  });
+
+  it('TC-BE-07: installment amount = roundUp(total / count)', () => {
+    // interest = 10000 × 0.24 × (12/12) = 2400
+    // total = 12400, per installment = 12400/12 = 1033.33 → rounds to 1033.50
+    const result = calculateInstallmentSchedule(baseLoan);
+    expect(result[0].amount).toBe(1033.5);
+  });
+
+  it('TC-BE-08: last installment absorbs rounding diff — sum ≈ principal + interest', () => {
+    const result = calculateInstallmentSchedule(baseLoan);
+    const sum = result.reduce((acc, i) => acc + i.amount, 0);
+    const expected = 10000 + 10000 * 0.24 * (12 / 12);
+    expect(sum).toBeCloseTo(expected, 0);
+  });
+
+  it('TC-BE-09: due dates increment by 1 month for frequency=1', () => {
+    const result = calculateInstallmentSchedule(baseLoan);
+    expect(result[0].dueDate).toEqual(new Date('2026-02-15'));
+    expect(result[1].dueDate).toEqual(new Date('2026-03-15'));
+    expect(result[11].dueDate).toEqual(new Date('2027-01-15'));
+  });
+
+  it('TC-BE-10: installmentNo starts at 1 and increments to numberOfInstallments', () => {
+    const result = calculateInstallmentSchedule(baseLoan);
+    expect(result[0].installmentNo).toBe(1);
+    expect(result[11].installmentNo).toBe(12);
+  });
+
+  it('TC-BE-11: frequency=4 (weekly) — due dates increment by 1 week', () => {
+    const loan = {
+      ...baseLoan,
+      paymentFrequency: 4,
+      numberOfInstallments: 4,
+      createdAt: new Date('2026-01-01'),
+    };
+    const result = calculateInstallmentSchedule(loan);
+    expect(result[0].dueDate).toEqual(new Date('2026-01-08'));
+    expect(result[1].dueDate).toEqual(new Date('2026-01-15'));
+  });
+});
+
+describe('LoanService.getInstallmentSchedule', () => {
+  let service: LoanService;
+
+  const loanRepo = {
+    create: jest.fn(),
+    save: jest.fn(),
+    findOne: jest.fn(),
+    createQueryBuilder: jest.fn(),
+    remove: jest.fn(),
+    count: jest.fn(),
+  };
+  const guarantorRepo = { create: jest.fn(), save: jest.fn(), delete: jest.fn() };
+
+  const baseLoan = {
+    loanAmount: 10000,
+    interestRate: 24,
+    numberOfInstallments: 12,
+    paymentFrequency: 1,
+    createdAt: new Date('2026-01-15'),
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        LoanService,
+        { provide: getRepositoryToken(Loan), useValue: loanRepo },
+        { provide: getRepositoryToken(Guarantor), useValue: guarantorRepo },
+      ],
+    }).compile();
+
+    service = module.get<LoanService>(LoanService);
+    jest.clearAllMocks();
+  });
+
+  it('TC-BE-12: returns schedule with correct shape for existing loan', async () => {
+    loanRepo.findOne.mockResolvedValue({ id: 1, ...baseLoan });
+    const result = await service.getInstallmentSchedule(1);
+    expect(result).toHaveLength(12);
+    expect(result[0]).toMatchObject({
+      installmentNo: 1,
+      amount: expect.any(Number),
+      dueDate: expect.any(Date),
+      paidDate: null,
+      remainingBalance: expect.any(Number),
+      outstandingAmount: expect.any(Number),
+      status: expect.any(String),
+      remark: null,
+    });
+  });
+
+  it('TC-BE-13: throws NotFoundException for non-existent loan', async () => {
+    loanRepo.findOne.mockResolvedValue(null);
+    await expect(service.getInstallmentSchedule(999)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
