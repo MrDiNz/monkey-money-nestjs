@@ -26,6 +26,6 @@ export class InstallmentPayment {
   @JoinColumn({ name: 'installment_id' })
   installment: Installment
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 }

@@ -928,12 +928,15 @@ describe('LoanService.getInstallmentSchedule', () => {
     createdAt: new Date('2026-01-15'),
   };
 
+  const paymentService = { generateInstallments: jest.fn() };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LoanService,
         { provide: getRepositoryToken(Loan), useValue: loanRepo },
         { provide: getRepositoryToken(Guarantor), useValue: guarantorRepo },
+        { provide: PaymentService, useValue: paymentService },
       ],
     }).compile();
 
