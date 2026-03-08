@@ -7,6 +7,7 @@ import { AutoPenalty } from './entities/auto-penalty.entity'
 import { Loan } from '@/modules/loan/entities/loan.entity'
 import { calculateAutoPenalty, applyPayment } from './utils/payment.util'
 import { CreatePaymentDto } from './dto/create-payment.dto'
+import { calculateInstallmentSchedule } from '@/modules/loan/utils/installment.util'
 
 @Injectable()
 export class PaymentService {
@@ -26,26 +27,23 @@ export class PaymentService {
    * Called by LoanService after creating a loan.
    */
   async generateInstallments(loan: Loan): Promise<void> {
-    const amount = Number(loan.loanAmount)
-    const n = loan.numberOfInstallments
-    const perInstallment = Math.round((amount / n) * 100) / 100
+    const schedule = calculateInstallmentSchedule({
+      loanAmount: Number(loan.loanAmount),
+      numberOfInstallments: loan.numberOfInstallments,
+      interestRate: Number(loan.interestRate),
+      paymentFrequency: loan.paymentFrequency,
+      createdAt: loan.createdAt,
+    })
 
-    const installments: Installment[] = []
-    for (let i = 0; i < n; i++) {
-      const dueDate = new Date(loan.createdAt)
-      dueDate.setUTCMonth(dueDate.getUTCMonth() + i + 1)
-      dueDate.setUTCDate(1)
-      dueDate.setUTCHours(0, 0, 0, 0)
-
-      const inst = this.installmentRepo.create({
-        dueDate,
-        amount: perInstallment,
+    const installments = schedule.map((item) =>
+      this.installmentRepo.create({
+        dueDate: item.dueDate,
+        amount: item.amount,
         paidAmount: 0,
         status: InstallmentStatus.UNPAID,
         loan,
-      })
-      installments.push(inst)
-    }
+      }),
+    )
     await this.installmentRepo.save(installments)
   }
 

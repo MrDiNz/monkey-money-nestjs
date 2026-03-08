@@ -23,6 +23,6 @@ export class AutoPenalty {
   @JoinColumn({ name: 'loan_id' })
   loan: Loan
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date
 }

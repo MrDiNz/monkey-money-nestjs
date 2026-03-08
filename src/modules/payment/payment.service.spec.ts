@@ -145,6 +145,8 @@ describe('PaymentService', () => {
         id: 1,
         loanAmount: 3000,
         numberOfInstallments: 3,
+        interestRate: 0,
+        paymentFrequency: 1,
         createdAt: new Date('2026-01-15T00:00:00Z'),
         ...overrides,
       }) as Loan
@@ -170,20 +172,35 @@ describe('PaymentService', () => {
       created.forEach((inst) => expect(inst.amount).toBe(1000))
     })
 
-    it('TC-SVC-03: due dates are monthly ascending from loan creation (1st of each month)', async () => {
+    it('TC-SVC-03: due dates are monthly ascending from loan creation date', async () => {
       const created: Array<{ dueDate: Date }> = []
       installmentRepo.create.mockImplementation((d: { dueDate: Date }) => { created.push(d); return d })
       installmentRepo.save.mockResolvedValue(created)
 
       await service.generateInstallments(makeLoan())
 
-      // Jan createdAt → Feb, Mar, Apr due dates (month index 1, 2, 3)
-      expect(created[0].dueDate.getUTCMonth()).toBe(1) // Feb
-      expect(created[1].dueDate.getUTCMonth()).toBe(2) // Mar
-      expect(created[2].dueDate.getUTCMonth()).toBe(3) // Apr
-      created.forEach((inst) => {
-        expect(inst.dueDate.getUTCDate()).toBe(1)
-        expect(inst.dueDate.getUTCHours()).toBe(0)
+      // createdAt Jan 15 → due dates Feb 15, Mar 15, Apr 15
+      expect(created[0].dueDate).toEqual(new Date('2026-02-15T00:00:00Z'))
+      expect(created[1].dueDate).toEqual(new Date('2026-03-15T00:00:00Z'))
+      expect(created[2].dueDate).toEqual(new Date('2026-04-15T00:00:00Z'))
+    })
+
+    it('TC-SVC-03b: installment amount includes interest and ends in .00 or .50 (rounding rule)', async () => {
+      // loanAmount=10000, interestRate=24, n=12, freq=1
+      // interest = 10000 × 0.24 × (12/12) = 2400 → total = 12400
+      // 12400 / 12 = 1033.333... → roundUp → 1033.50
+      const created: Array<{ amount: number }> = []
+      installmentRepo.create.mockImplementation((d: { amount: number }) => { created.push(d); return d })
+      installmentRepo.save.mockResolvedValue(created)
+
+      await service.generateInstallments(
+        makeLoan({ loanAmount: 10000, numberOfInstallments: 12, interestRate: 24, paymentFrequency: 1 }),
+      )
+
+      created.slice(0, -1).forEach((inst) => {
+        expect(inst.amount).toBe(1033.5)
+        const cents = Math.round((inst.amount % 1) * 100)
+        expect(cents === 0 || cents === 50).toBe(true)
       })
     })
 
