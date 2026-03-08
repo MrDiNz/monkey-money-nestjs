@@ -64,7 +64,7 @@ src/
 | `JWT_SECRET` | `your-secret-key` |
 | `PORT` | `5001` |
 
-`synchronize` is enabled automatically when `NODE_ENV !== 'production'`.
+`synchronize` is **disabled** for all environments — schema changes must go through migrations only.
 
 ## Timezone Convention
 
@@ -110,6 +110,26 @@ const endUTC   = new Date(Date.UTC(year, month,     1) - 7 * 3600_000 - 1)
 ## Development Workflow
 
 TDD approach: write/update tests before implementation, confirm failure, then implement. All code must pass `pnpm run lint` and `pnpm run build` (TypeScript) without errors before committing.
+
+## Schema Management
+
+**Entity column naming — two conventions exist:**
+- Entities backed by **TypeORM-generated** migrations (user, loan, borrower, etc.): camelCase column names, no explicit `name`.
+- Entities backed by **manually written** migrations (installment, installment_payment, auto_penalty): snake_case DB columns, must declare explicit `name` mappings:
+
+```typescript
+@Column({ name: 'due_date', type: 'timestamp with time zone' })
+dueDate: Date
+
+@JoinColumn({ name: 'loan_id' })
+loan: Loan
+```
+
+**Reset local DB (drop all tables):**
+```bash
+psql -h localhost -U postgres -d monkey-money -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+# Then: pnpm run build && pnpm run migration:run
+```
 
 ## Seed
 
