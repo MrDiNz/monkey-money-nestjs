@@ -9,6 +9,6 @@ export default registerAs('database', () => ({
   database: process.env.DATABASE_NAME || 'monkey-money',
   autoLoadEntities: true,
   synchronize: process.env.NODE_ENV !== 'production',
-  migrationsRun: process.env.NODE_ENV === 'production',
+  migrationsRun: true,
   migrations: ['dist/migrations/*.js'],
 }));
