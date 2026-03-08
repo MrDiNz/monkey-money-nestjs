@@ -13,17 +13,17 @@ export class InstallmentPayment {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2 })
   paidAmount: number
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ name: 'late_fee', type: 'decimal', precision: 10, scale: 2, default: 0 })
   lateFee: number
 
-  @Column({ type: 'timestamp with time zone' })
+  @Column({ name: 'paid_at', type: 'timestamp with time zone' })
   paidAt: Date
 
   @ManyToOne(() => Installment, (inst) => inst.payments, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'installment_id' })
   installment: Installment
 
   @CreateDateColumn()

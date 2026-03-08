@@ -22,20 +22,20 @@ export class Installment {
   @PrimaryGeneratedColumn()
   id: number
 
-  @Column({ type: 'timestamp with time zone' })
+  @Column({ name: 'due_date', type: 'timestamp with time zone' })
   dueDate: Date
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   amount: number
 
-  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  @Column({ name: 'paid_amount', type: 'decimal', precision: 15, scale: 2, default: 0 })
   paidAmount: number
 
   @Column({ type: 'enum', enum: InstallmentStatus, default: InstallmentStatus.UNPAID })
   status: InstallmentStatus
 
   @ManyToOne(() => Loan, (loan) => loan.installments, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'loan_id' })
   loan: Loan
 
   @OneToMany(() => InstallmentPayment, (p) => p.installment, { cascade: true })

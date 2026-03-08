@@ -16,11 +16,11 @@ export class AutoPenalty {
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   amount: number
 
-  @Column({ type: 'timestamp with time zone' })
+  @Column({ name: 'calculated_at', type: 'timestamp with time zone' })
   calculatedAt: Date
 
   @ManyToOne(() => Loan, { onDelete: 'CASCADE' })
-  @JoinColumn()
+  @JoinColumn({ name: 'loan_id' })
   loan: Loan
 
   @CreateDateColumn()

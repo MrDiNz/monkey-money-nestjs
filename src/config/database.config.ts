@@ -8,7 +8,7 @@ export default registerAs('database', () => ({
   password: process.env.DATABASE_PASSWORD || 'postgres',
   database: process.env.DATABASE_NAME || 'monkey-money',
   autoLoadEntities: true,
-  synchronize: process.env.NODE_ENV !== 'production',
+  synchronize: false,
   migrationsRun: true,
   migrations: ['dist/migrations/*.js'],
 }));
