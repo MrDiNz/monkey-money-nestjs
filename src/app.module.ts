@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from '@/modules/user/user.module';
 import { LoanModule } from '@/modules/loan/loan.module';
+import { PaymentModule } from '@/modules/payment/payment.module';
 import { AuthModule } from '@/core/auth/auth.module';
 import { JwtAuthGuard } from '@/core/auth/jwt-auth.guard';
 import databaseConfig from './config/database.config';
@@ -38,6 +39,7 @@ import globalConfig from './config/global.config';
     }),
     UserModule,
     LoanModule,
+    PaymentModule,
     AuthModule,
   ],
   controllers: [AppController],

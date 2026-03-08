@@ -15,6 +15,7 @@ import {
   getMonthRangeUTC,
   getBangkokParts,
 } from './utils/loan-number.util';
+import { PaymentService } from '@/modules/payment/payment.service';
 
 @Injectable()
 export class LoanService {
@@ -23,6 +24,7 @@ export class LoanService {
     private readonly loanRepository: Repository<Loan>,
     @InjectRepository(Guarantor)
     private readonly guarantorRepository: Repository<Guarantor>,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async getNextSequence(date: Date): Promise<number> {
@@ -48,6 +50,8 @@ export class LoanService {
       );
       await this.guarantorRepository.save(guarantorEntities);
     }
+
+    await this.paymentService.generateInstallments(saved);
 
     return this.findOne(saved.id);
   }

@@ -11,6 +11,7 @@ import {
 import { Borrower } from './borrower.entity';
 import { Vehicle } from './vehicle.entity';
 import { Guarantor } from './guarantor.entity';
+import { Installment } from '@/modules/payment/entities/installment.entity';
 
 @Entity()
 export class Loan {
@@ -51,6 +52,9 @@ export class Loan {
     eager: true,
   })
   guarantors: Guarantor[];
+
+  @OneToMany(() => Installment, (installment) => installment.loan)
+  installments: Installment[];
 
   @CreateDateColumn()
   createdAt: Date;
