@@ -4,6 +4,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { LoanService } from './loan.service';
 import { Loan } from './entities/loan.entity';
 import { Guarantor } from './entities/guarantor.entity';
+import { PaymentService } from '@/modules/payment/payment.service';
 import {
   CreateLoanDto,
   BorrowerDto,
@@ -114,6 +115,10 @@ describe('LoanService', () => {
     delete: jest.fn(),
   };
 
+  const paymentService = {
+    generateInstallments: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeEach(async () => {
     // Re-setup mockQb after clearAllMocks resets call tracking.
     // Implementation survives clearAllMocks, but we re-set mockReturnThis to be safe.
@@ -129,6 +134,7 @@ describe('LoanService', () => {
         LoanService,
         { provide: getRepositoryToken(Loan), useValue: loanRepo },
         { provide: getRepositoryToken(Guarantor), useValue: guarantorRepo },
+        { provide: PaymentService, useValue: paymentService },
       ],
     }).compile();
 
@@ -142,6 +148,7 @@ describe('LoanService', () => {
     mockQb.take.mockReturnThis();
     mockQb.where.mockReturnThis();
     loanRepo.createQueryBuilder.mockReturnValue(mockQb);
+    paymentService.generateInstallments.mockResolvedValue(undefined);
   });
 
   it('should be defined', () => {
